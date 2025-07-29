@@ -39,28 +39,40 @@ st.caption("A record used to track financial transactions and manage financial a
 transaction_category = st.selectbox("Transaction category", ["Income", "Expense", "Transfer"])
 st.caption("The specific category of a financial transaction")
 
+# Conditional of transaction category
 selected_income = ""
 selected_expense = ""
-deposit = 0
-payment = 0
+deposit = 0.00
+payment = 0.00
 if transaction_category == "Income":
     selected_income = st.selectbox("Income category", income_category)
     selected_expense = ""
-    deposit = st.number_input("Amount (IDR)", min_value=0.0, step=500.0, format="%.0f")
-    payment = 0
+    deposit = st.number_input("Amount (IDR)", min_value=0.00, step=500.00, format="%.0f")
+    payment = 0.00
 
 elif transaction_category == "Expense":
     selected_income = ""
     selected_expense = st.selectbox("Expense category", expense_category)
-    deposit = 0
-    payment = st.number_input("Amount (IDR)", min_value=0.0, step=500.0, format="%.0f")
-else:
-    st.caption("Transfer input coming soon.")
+    deposit = 0.00
+    payment = st.number_input("Amount (IDR)", min_value=0.00, step=500.00, format="%.0f")
 
+else: # transaction category is transfer
+    received_account = st.selectbox("Received account", [i for i in account_list if i != account])
+    selected_income = "Transfer"
+    selected_expense = "Transfer"
+    payment = st.number_input("Amount (IDR)", min_value=0.0, step=500.00, format="%.0f")
+    deposit = payment
+
+# Dataframe analysis after submit a transaction
 if st.button("Submit"):
-    new_data = pd.DataFrame([[date, payee, account, transaction_category, selected_income, selected_expense, deposit, payment]], columns=df.columns)
-    df = pd.concat([df, new_data], ignore_index=True)
-    df.to_csv(transaction_file, index=False)
+    if transaction_category == "Income" and transaction_category == "Expense":
+        new_data = pd.DataFrame([[date, payee, account, transaction_category, selected_income, selected_expense, deposit, payment]], columns=df.columns)
+        df = pd.concat([df, new_data], ignore_index=True)
+        df.to_csv(transaction_file, index=False)
+    else: # transaction category is transfer
+        new_data = pd.DataFrame([[date, payee, account, transaction_category, selected_income, selected_expense, deposit, payment]], columns=df.columns)
+        df = pd.concat([df, new_data], ignore_index=True)
+        df.to_csv(transaction_file, index=False)
     st.success("Entry added!")
 
     formatted_amount = f"{(deposit or payment):,.0f}".replace(",", ".")
