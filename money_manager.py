@@ -113,6 +113,23 @@ accounts_summary.columns = ['Account', 'Net balance (IDR)']
 st.dataframe(accounts_summary, hide_index=True)
 
 #%%
+# BUDGET
+# Dudget data
+income_budget_file = "monthly_budget.csv"
+
+month = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+# Load existing data
+if os.path.exists(income_budget_file):
+    income_budget_df = pd.read_csv(income_budget_file)
+else:
+    income_budget_df = pd.DataFrame(index=income_category, columns=month)
+
+st.subheader('📄 Monthly budget')
+st.button('Submit budget')
+
+
+#%%
 # REPORT
 
 # Weekly repot
