@@ -115,62 +115,83 @@ st.dataframe(accounts_summary, hide_index=True)
 #%%
 # BUDGET
 # Dudget data
-income_budget_file = "monthly_budget.csv"
-
+income_budget_file = "income_monthly_budget.csv"
+expense_budget_file = "expense_monthly_budget.csv"
 month = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 # Load existing data
 if os.path.exists(income_budget_file):
     income_budget_df = pd.read_csv(income_budget_file)
+    expense_budget_df = pd.read_csv(expense_budget_file)
 else:
     income_budget_df = pd.DataFrame(index=income_category, columns=month)
+    expense_budget_df = pd.DataFrame(index=expense_category, columns=month)
 
 st.subheader('📄 Monthly budget')
-st.button('Submit budget')
+with st.expander("**Income budget**"):
+    # Income budget editor
+    edited_income_budget_df = st.data_editor(income_budget_df, num_rows="fixed", use_container_width=True)
 
+    if st.button("Save income budget"):
+        edited_income_budget_df.to_csv(income_budget_file, index=True)
+        st.success("Saved to income budget")
+
+with st.expander("**Expense budget**"):
+    # Expense budget editor
+    edited_expense_budget_df = st.data_editor(expense_budget_df, num_rows="fixed", use_container_width=True)
+
+    if st.button("Save expense budget"):
+        edited_expense_budget_df.to_csv(expense_budget_file, index=True)
+        st.success("Saved to expense budget")
 
 #%%
 # REPORT
 
 # Weekly repot
 #
-st.subheader("📄 Weekly report")
-week_mode = st.selectbox("Week mode", ['Ongoing week', 'Specified week'])
+st.subheader("📄 Report")
+with st.expander("**Weekly report**"):
+    week_mode = st.selectbox("Week mode", ['Ongoing week', 'Specified week'])
 
-if week_mode == 'Specified week':
-    today_year = datetime.now().year
-    select_week_start_year = f"{today_year}-01-01"
-    select_week_end_year = f"{today_year}-12-31"
-    weekly_dates = [d.date() for d in pd.date_range(start=select_week_start_year, end=select_week_end_year, freq='W-MON')]
-    specified_start = st.selectbox("Choose week", weekly_dates)
+    if week_mode == 'Specified week':
+        today_year = datetime.now().year
+        select_week_start_year = f"{today_year}-01-01"
+        select_week_end_year = f"{today_year}-12-31"
+        weekly_dates = [d.date() for d in pd.date_range(start=select_week_start_year, end=select_week_end_year, freq='W-MON')]
+        specified_start = st.selectbox("Choose week", weekly_dates)
 
-# 
-week_interval = st.selectbox("Week interval", ['Weekly', 'Bi-weekly'])
+    # 
+    week_interval = st.selectbox("Week interval", ['Weekly', 'Bi-weekly'])
 
-if week_mode == 'Ongoing week':
-    today_datetime = datetime.now()
-    start_of_week = today_datetime - timedelta(days=today_datetime.weekday())
-    begin = start_of_week.date()
+    if week_mode == 'Ongoing week':
+        today_datetime = datetime.now()
+        start_of_week = today_datetime - timedelta(days=today_datetime.weekday())
+        begin = start_of_week.date()
 
-    if week_interval == 'Weekly':
-        end = begin + timedelta(days=6)
-        st.markdown(f'**Begin week:** {begin}')
-        st.markdown(f'**End week:** {end}')
+        if week_interval == 'Weekly':
+            end = begin + timedelta(days=6)
+            st.markdown(f'**Begin week:** {begin}')
+            st.markdown(f'**End week:** {end}')
+        else:
+            end = begin + timedelta(days=13)
+            st.markdown(f'**Begin week:** {begin}')
+            st.markdown(f'**End week:** {end}')
+
     else:
-        end = begin + timedelta(days=13)
-        st.markdown(f'**Begin week:** {begin}')
-        st.markdown(f'**End week:** {end}')
+        if week_interval == 'Weekly':
+            specified_end = specified_start + timedelta(days=6)
+            st.markdown(f'**Begin week:** {specified_start}')
+            st.markdown(f'**End week:** {specified_end}')
+        else:
+            specified_end = specified_start + timedelta(days=13)
+            st.markdown(f'**Begin week:** {specified_start}')
+            st.markdown(f'**End week:** {specified_end}')
 
-else:
-    if week_interval == 'Weekly':
-        specified_end = specified_start + timedelta(days=6)
-        st.markdown(f'**Begin week:** {specified_start}')
-        st.markdown(f'**End week:** {specified_end}')
-    else:
-        specified_end = specified_start + timedelta(days=13)
-        st.markdown(f'**Begin week:** {specified_start}')
-        st.markdown(f'**End week:** {specified_end}')
+with st.expander("**Monthly report**"):
+    pass
 
+with st.expander("**Annual report**"):
+    pass
 
 weekly_budget_summary = []
 weekly_graph = []
