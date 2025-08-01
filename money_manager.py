@@ -3,7 +3,7 @@ import os
 import pandas as pd
 import streamlit as st
 from datetime import datetime, timedelta
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 #%%
 # File to save the data
