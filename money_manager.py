@@ -241,9 +241,13 @@ if money_manager_option == "Accounts":
 
 #%%
 # TRANSACTIONS
-selected_transaction = st.selectbox('Select transaction', ['Daily', 'Weekly', 'Monthly', 'Annual'])
-
 if money_manager_option == "Transactions":
+    st.title("💰 Money Manager")
+    transaction_account = st.selectbox('Account', ['All accounts'] + account_list)
+    transaction_start_date = st.date_input('Start date')
+    transaction_end_date = st.date_input('End date')
+    transaction_category = st.selectbox('Transaction category', ['Income', 'Expense', 'Transfer'])
+
     data = {
         "Month": ["Jan", "Feb", "Mar", "Apr"],
         "Sales": [100, 120, 140, 160],
@@ -409,9 +413,9 @@ if money_manager_option == "Report":
                 with tab1:
                     col1, col2 = st.columns(2)
                     with col1:
-                        st.metric("Income", f'IDR {ongoing_weekly_summary['Money received'].sum()}')          
+                        st.metric("Income", f"IDR {ongoing_weekly_summary['Money received'].sum()}")          
                     with col2:
-                        st.metric("Expense", f'IDR {ongoing_weekly_summary['Payment'].sum()}')
+                        st.metric("Expense", f"IDR {ongoing_weekly_summary['Payment'].sum()}")
 
                     # add budget
 
