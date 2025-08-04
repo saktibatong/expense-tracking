@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 st.set_page_config(page_title="BATS Money manger", layout="wide")
 
 # Sidebar
-money_manager_option = st.sidebar.selectbox("Choose category", ["Home", "Budget", "Accounts", "Transactions", "Report", "Goals"])
+money_manager_option = st.sidebar.selectbox("Select category", ["Home", "Budget", "Accounts", "Transactions", "Report", "Goals"])
 
 #%%
 # GENERAL DATA
@@ -82,16 +82,16 @@ if money_manager_option == "Home":
         # Dataframe analysis after submit a transaction
         if st.button("Submit"):
             if transaction_category == "Income" or transaction_category == "Expense":
-                new_data = pd.DataFrame([[date, payee, account, transaction_category, selected_income, selected_expense, deposit, payment]], columns=df.columns)
+                new_data = pd.DataFrame([[date, payee, account, transaction_category, selected_income, selected_expense, deposit, payment]], columns=transaction_df.columns)
                 transaction_df = pd.concat([transaction_df, new_data], ignore_index=True)
                 transaction_df.to_csv(transaction_file, index=False)
 
             else: # transaction category is transfer
-                new_data1 = pd.DataFrame([[date, payee, account, transaction_category, '', selected_expense, 0.00, payment]], columns=df.columns)
+                new_data1 = pd.DataFrame([[date, payee, account, transaction_category, '', selected_expense, 0.00, payment]], columns=transaction_df.columns)
                 transaction_df = pd.concat([transaction_df, new_data1], ignore_index=True)
                 transaction_df.to_csv(transaction_file, index=False)
 
-                new_data2 = pd.DataFrame([[date, payee, received_account, transaction_category, selected_income, '', deposit, 0.00]], columns=df.columns)
+                new_data2 = pd.DataFrame([[date, payee, received_account, transaction_category, selected_income, '', deposit, 0.00]], columns=transaction_df.columns)
                 transaction_df = pd.concat([transaction_df, new_data2], ignore_index=True)
                 transaction_df.to_csv(transaction_file, index=False)
 
@@ -115,7 +115,7 @@ if money_manager_option == "Home":
 # BUDGET
 if money_manager_option == "Budget":
     # Account title
-    st.title("💰 Money Manager")
+    st.title("📄 Monthly budget")
 
     with st.container():
         # Dudget data
@@ -123,15 +123,19 @@ if money_manager_option == "Budget":
         expense_budget_file = "expense_monthly_budget.csv"
         month = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
-        # Load existing data
+        # Load income budget
         if os.path.exists(income_budget_file):
             income_budget_df = pd.read_csv(income_budget_file)
-            expense_budget_df = pd.read_csv(expense_budget_file)
         else:
             income_budget_df = pd.DataFrame(index=income_category, columns=month)
+        
+        # Load expense budget
+        if os.path.exists(expense_budget_file):
+            expense_budget_df = pd.read_csv(expense_budget_file)
+        else:
             expense_budget_df = pd.DataFrame(index=expense_category, columns=month)
 
-        st.subheader('📄 Monthly budget')
+        # Fill budget
         with st.expander("**Income budget**"):
             # Income budget editor
             edited_income_budget_df = st.data_editor(income_budget_df, num_rows="fixed", use_container_width=True)
@@ -155,27 +159,90 @@ if money_manager_option == "Accounts":
     st.title("💰 Money Manager")
 
     with st.container():
-        st.subheader("📄 Accounts net balance")
+        st.subheader("📄 Accounts balance")
 
         # Read transactions
         transaction_file = "transaction.csv"
         transaction_df = pd.read_csv(transaction_file)
+
+        # Load existing data
+        accounts_file = "accounts.csv"
+
+        if os.path.exists(accounts_file):
+            accounts_df = pd.read_csv(accounts_file)
+        else:
+            accounts_df = pd.DataFrame(columns=['Account', 'Balance (IDR)', 'Goal', '%'])
 
         # Calculate accounts money
         income_expense_accounts = pd.pivot_table(transaction_df, index="Account", values=['Money received', 'Payment'], aggfunc='sum')
         income_expense_accounts.reset_index(inplace=True)
         income_expense_accounts['Net balance'] = income_expense_accounts['Money received'] - income_expense_accounts['Payment']
 
-        account_total = income_expense_accounts[['Net balance']].sum()
-        account_total['Account'] = 'Total'
-        income_expense_total_acounts = pd.concat([income_expense_accounts, pd.DataFrame([account_total])], ignore_index=True)
+        # Prepare summary
+        accounts_summary = income_expense_accounts[['Account', 'Net balance']].copy()
+        accounts_summary.columns = ['Account', 'Balance (IDR)']
 
-        accounts_summary = income_expense_total_acounts[['Account', 'Net balance']]
-        accounts_summary.columns = ['Account', 'Net balance (IDR)']
+        # Merge with saved goals
+        if not accounts_df.empty:
+            accounts_summary = accounts_summary.merge(accounts_df[['Account', 'Goal']], on='Account', how='left')
+        else:
+            accounts_summary['Goal'] = None
+
+        # Calculate percentage
+        accounts_summary['%'] = accounts_summary.apply(
+            lambda row: row['Balance (IDR)'] / row['Goal'] if pd.notnull(row['Goal']) and row['Goal'] != 0 else None,
+            axis=1
+        )
+
+        # Save summary
+        accounts_summary.to_csv(accounts_file, index=False)
         st.dataframe(accounts_summary, hide_index=True)
+
+        # # Add total row
+        # total_balance = accounts_summary['Balance (IDR)'].sum()
+        # total_goal = accounts_summary['Goal'].sum(skipna=True)
+        # total_percent = total_balance / total_goal if total_goal else None
+
+        # total_row = pd.DataFrame([{
+        #     'Account'       : 'Total',
+        #     'Balance (IDR)' : total_balance,
+        #     'Goal'          : total_goal,
+        #     '%'             : total_percent
+        # }])
+
+        # account_total_summary = pd.concat([accounts_summary, total_row], ignore_index=True)
+
+        # # Edit mode
+        # if st.button("Edit goals"):
+            
+
+        #     edited_goals = st.data_editor(accounts_summary, num_rows="fixed", use_container_width=True, column_config={'Account'        : st.column_config.TextColumn(disabled=True),
+        #                                                                                                                 'Balance (IDR)' : st.column_config.NumberColumn(disabled=True),
+        #                                                                                                                 '%'             : st.column_config.NumberColumn(disabled=True)})
+
+        #     if st.button("Save"):
+        #         edited_goals.to_csv(accounts_file, index=True) # save to csv
+
+        #         # Recompute total row after edit
+        #         total_balance = edited_goals['Balance (IDR)'].sum()
+        #         total_goal = edited_goals['Goal'].sum(skipna=True)
+        #         total_percent = total_balance / total_goal if total_goal else None
+
+        #         total_row = pd.DataFrame([{
+        #             'Account'       : 'Total',
+        #             'Balance (IDR)' : total_balance,
+        #             'Goal'          : total_goal,
+        #             '%'             : total_percent
+        #         }])
+        #         updated_summary = pd.concat([edited_goals, total_row], ignore_index=True)
+        #         st.dataframe(updated_summary, hide_index=True)
+        # else:
+        #     st.dataframe(account_total_summary, hide_index=True)
 
 #%%
 # TRANSACTIONS
+selected_transaction = st.selectbox('Select transaction', ['Daily', 'Weekly', 'Monthly', 'Annual'])
+
 if money_manager_option == "Transactions":
     data = {
         "Month": ["Jan", "Feb", "Mar", "Apr"],
@@ -296,13 +363,19 @@ if money_manager_option == "Transactions":
 # REPORT
 if money_manager_option == "Report":
     # Account title
-    st.title("💰 Money Manager")
-    st.subheader("📄 Report")
+    st.title("💰 Money Report")
+    selected_report = st.selectbox('Select report', ['Weekly', 'Monthly', 'Annual'])
 
-    # Weekly repot   
-    with st.expander("**Weekly report**"):
+    # Read transactions
+    transaction_file = "transaction.csv"
+    transaction_df = pd.read_csv(transaction_file)
+
+    # Weekly repot
+    if selected_report == 'Weekly':
+        # week mode
         week_mode = st.selectbox("Week mode", ['Ongoing week', 'Specified week'])
 
+        # specified week condition
         if week_mode == 'Specified week':
             today_year = datetime.now().year
             select_week_start_year = f"{today_year}-01-01"
@@ -310,9 +383,10 @@ if money_manager_option == "Report":
             weekly_dates = [d.date() for d in pd.date_range(start=select_week_start_year, end=select_week_end_year, freq='W-MON')]
             specified_start = st.selectbox("Choose week", weekly_dates)
 
-        # 
+        # week interval
         week_interval = st.selectbox("Week interval", ['Weekly', 'Bi-weekly'])
 
+        # start and end week of week mode and interval
         if week_mode == 'Ongoing week':
             today_datetime = datetime.now()
             start_of_week = today_datetime - timedelta(days=today_datetime.weekday())
@@ -322,7 +396,34 @@ if money_manager_option == "Report":
                 end = begin + timedelta(days=6)
                 st.markdown(f'**Begin week:** {begin}')
                 st.markdown(f'**End week:** {end}')
-            else:
+
+                # convert date to pandas date
+                transaction_df['Date'] = pd.to_datetime(transaction_df['Date'])
+                filtered_start_date = pd.to_datetime(begin)
+                filtered_end_date = pd.to_datetime(end)
+                transaction_filtered_df = transaction_df[(transaction_df['Date'] >= filtered_start_date) & (transaction_df['Date'] <= filtered_end_date)]
+                ongoing_weekly_summary = pd.pivot_table(transaction_filtered_df, index="Transaction category", values=['Money received', 'Payment'], aggfunc='sum')
+
+                # Create Tabs
+                tab1, tab2, tab3 = st.tabs(["📊 Summary", "📈 Chart", "📄 Detailed Data"])
+                with tab1:
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.metric("Income", f'IDR {ongoing_weekly_summary['Money received'].sum()}')          
+                    with col2:
+                        st.metric("Expense", f'IDR {ongoing_weekly_summary['Payment'].sum()}')
+
+                    # add budget
+
+                with tab2:
+                    # Overall graph
+                    # Detailed graph
+                    pass
+                
+                with tab3:
+                    st.dataframe(transaction_filtered_df)    
+            
+            else: # Biweekly
                 end = begin + timedelta(days=13)
                 st.markdown(f'**Begin week:** {begin}')
                 st.markdown(f'**End week:** {end}')
@@ -336,35 +437,6 @@ if money_manager_option == "Report":
                 specified_end = specified_start + timedelta(days=13)
                 st.markdown(f'**Begin week:** {specified_start}')
                 st.markdown(f'**End week:** {specified_end}')
-
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric("Sales", "$100K")
-            
-        with col2:
-            st.metric("Profit", "$25K")
-        
-        data = {
-        "Month": ["January", "February", "March", "April"],
-        "Sales": [100, 150, 200, 170],
-        "Profit": [30, 50, 70, 60]
-        }
-        df = pd.DataFrame(data)
-
-        # Create Tabs
-        tab1, tab2, tab3 = st.tabs(["📊 Summary", "📈 Chart", "📄 Detailed Data"])
-
-        with tab1:
-            st.subheader("Summary Statistics")
-            st.write(df.describe())
-
-        with tab2:
-            st.subheader("Sales Line Chart")
-            st.line_chart(df.set_index("Month")[["Sales", "Profit"]])
-        
-        with tab3:
-            st.subheader("Raw Data")
-            st.dataframe(df)
 
     with st.expander("**Monthly report**"):
         pass
