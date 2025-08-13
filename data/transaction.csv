@@ -9,3 +9,8 @@ Date,Payee,Account,Transaction category,Income category,Expense category,Money r
 2025-08-03,,Checking BRI,Transfer,,Transfer,0.0,500.0
 2025-08-03,,Checking BCA,Transfer,Transfer,,500.0,0.0
 2025-08-12,,Checking BRI,Income,Dividends,,2000.0,0.0
+2025-08-13,r34ewr,Checking BRI,Expense,,Haircare,0.0,2500.0
+2025-08-13,r34ewr,Checking BRI,Expense,,Haircare,0.0,2500.0
+2025-08-13,dsgv,Checking BRI,Income,Interest Income,,3500.0,0.0
+2025-08-13,wfcs,Checking BRI,Income,Dividends,,1000.0,0.0
+2025-08-13,,Checking BRI,Income,Dividends,,500.0,0.0

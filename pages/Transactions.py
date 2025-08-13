@@ -8,7 +8,7 @@ st.title("💰 Money Manager")
 transaction_account = st.selectbox('Account', ['All accounts'] + st.session_state["account_list"])
 transaction_start_date = st.date_input('Start date')
 transaction_end_date = st.date_input('End date')
-transaction_category = st.selectbox('Transaction category', ['Income', 'Expense', 'Transfer'])
+transaction_category = st.selectbox('Transaction category', ['All categories', 'Income', 'Expense', 'Transfer'])
 
 data = {
     "Month": ["Jan", "Feb", "Mar", "Apr"],

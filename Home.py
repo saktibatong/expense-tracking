@@ -89,17 +89,38 @@ with st.container():
             transaction_df.to_csv(transaction_file, index=False)
 
         st.success("Entry added!")
-
+        
         formatted_amount = f"{(deposit or payment):,.0f}".replace(",", ".")
         st.write(f"📅 **{date}** — 💳 **{account}** — {transaction_category} of **Rp {formatted_amount}**")
+        st.rerun()
 
 # Show last 10 transactions
 with st.container():
     st.subheader("📄 Last 10 transactions")
+
     last_transactional_df = transaction_df.copy()
-    last_transactional_df['Sub-category'] = last_transactional_df['Income category'].fillna('') + last_transactional_df['Expense category'].fillna('')
-    last_transactional_df['Amonut (IDR)'] = last_transactional_df['Money received'].fillna('') + last_transactional_df['Payment'].fillna('')
-    last_transactional_df = last_transactional_df.drop(columns=['Income category', 'Expense category', 'Money received', 'Payment'])
-    last_transactional_df = last_transactional_df.tail(10)  # Get last 10
-    last_transactional_df.index = range(1, len(transaction_df) + 1)  # Set index from 1
-    st.dataframe(last_transactional_df, hide_index=False)  # Show the index
+
+    # Merge income and expense category into one column
+    last_transactional_df['Sub-category'] = (
+        last_transactional_df['Income category'].fillna('') +
+        last_transactional_df['Expense category'].fillna('')
+    )
+
+    # Merge amounts — safely handle NaNs by replacing with 0
+    last_transactional_df['Amount (IDR)'] = (
+        last_transactional_df['Money received'].fillna(0) +
+        last_transactional_df['Payment'].fillna(0)
+    )
+
+    # Drop original columns
+    last_transactional_df = last_transactional_df.drop(
+        columns=['Income category', 'Expense category', 'Money received', 'Payment']
+    )
+
+    # Get last 10 and reset index starting from 1
+    last_transactional_df = last_transactional_df.tail(10).reset_index(drop=True)
+    last_transactional_df.index = last_transactional_df.index + 1
+
+    # Display table
+    st.dataframe(last_transactional_df, hide_index=False)
+

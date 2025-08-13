@@ -49,7 +49,9 @@ if st.session_state.current_page == "main":
 
     # Calculate %
     accounts_summary['%'] = accounts_summary.apply(
-        lambda row: 100 * row['Balance (IDR)'] / row['Goal'] if pd.notnull(row['Goal']) and row['Goal'] != 0 else None,
+        lambda row: round(100 * row['Balance (IDR)'] / row['Goal'], 2)
+        if pd.notnull(row['Goal']) and row['Goal'] != 0
+        else None,
         axis=1
     )
 
@@ -58,7 +60,7 @@ if st.session_state.current_page == "main":
     total_goal = accounts_summary['Goal'].sum(skipna=True)
 
     if accounts_summary[['Balance (IDR)', 'Goal']].notna().all().all(): # Only calculate if there are no NaNs in both columns
-        total_percent = 100 * total_balance / total_goal if total_goal else None
+        total_percent = round(100 * total_balance / total_goal, 2) if total_goal else None
     else:
         total_percent = None
 

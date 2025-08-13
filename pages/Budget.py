@@ -36,6 +36,7 @@ with st.container():
         if st.button("Save income budget"):
             edited_income_budget_df.to_csv(income_budget_file)
             st.success("Saved to income budget")
+            st.rerun()
 
     with st.expander("**Expense budget**"):
         # Expense budget editor
@@ -44,3 +45,4 @@ with st.container():
         if st.button("Save expense budget"):
             edited_expense_budget_df.to_csv(expense_budget_file)
             st.success("Saved to expense budget")
+            st.rerun()
