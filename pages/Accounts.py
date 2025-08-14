@@ -2,15 +2,21 @@
 import os
 import pandas as pd
 import streamlit as st
+import numpy as np
 
 #%%
 # PAGE STATE CONTROL
 if "current_page" not in st.session_state:
     st.session_state.current_page = "main"
+if "edit_df" not in st.session_state:
+    st.session_state.edit_df = pd.DataFrame()
 
 # Files
 transaction_file = "data/transaction.csv"
 accounts_file = "data/accounts.csv"
+
+COL_MONEY_IN = "Money received"
+COL_MONEY_OUT = "Payment"
 
 #%%
 # PAGE 1 — MAIN OVERVIEW
@@ -18,7 +24,11 @@ if st.session_state.current_page == "main":
     st.title("💰 Accounts")
 
     # Read transactions
-    transaction_df = pd.read_csv(transaction_file)
+    if os.path.exists(transaction_file) and os.path.getsize(transaction_file) > 0:
+        transaction_df = pd.read_csv(transaction_file)
+    else:
+        st.warning("No transaction data found.")
+        transaction_df = pd.DataFrame(columns=["Account", COL_MONEY_IN, COL_MONEY_OUT])
 
     # Load saved accounts
     if os.path.exists(accounts_file):
@@ -26,62 +36,57 @@ if st.session_state.current_page == "main":
     else:
         accounts_df = pd.DataFrame(columns=['Account', 'Balance (IDR)', 'Goal', '%'])
 
-    # Calculate balances
-    income_expense_accounts = pd.pivot_table(
-        transaction_df,
-        index="Account",
-        values=['Money received', 'Payment'],
-        aggfunc='sum'
-    ).reset_index()
+    if not transaction_df.empty:
+        # Calculate balances
+        income_expense_accounts = pd.pivot_table(
+            transaction_df,
+            index="Account",
+            values=[COL_MONEY_IN, COL_MONEY_OUT],
+            aggfunc='sum'
+        ).reset_index()
 
-    income_expense_accounts['Net balance'] = (
-        income_expense_accounts['Money received'] - income_expense_accounts['Payment']
-    )
+        income_expense_accounts['Net balance'] = (
+            income_expense_accounts[COL_MONEY_IN] - income_expense_accounts[COL_MONEY_OUT]
+        )
 
-    accounts_summary = income_expense_accounts[['Account', 'Net balance']].copy()
-    accounts_summary.columns = ['Account', 'Balance (IDR)']
+        accounts_summary = income_expense_accounts[['Account', 'Net balance']].copy()
+        accounts_summary.columns = ['Account', 'Balance (IDR)']
 
-    # Merge with goals
-    if not accounts_df.empty:
-        accounts_summary = accounts_summary.merge(accounts_df[['Account', 'Goal']], on='Account', how='left')
-    else:
-        accounts_summary['Goal'] = None
+        # Merge with goals
+        accounts_summary = accounts_summary.merge(
+            accounts_df[['Account', 'Goal']], on='Account', how='left'
+        ) if not accounts_df.empty else accounts_summary.assign(Goal=None)
 
-    # Calculate %
-    accounts_summary['%'] = accounts_summary.apply(
-        lambda row: round(100 * row['Balance (IDR)'] / row['Goal'], 2)
-        if pd.notnull(row['Goal']) and row['Goal'] != 0
-        else None,
-        axis=1
-    )
+        # Calculate %
+        accounts_summary['%'] = np.where(
+            (accounts_summary['Goal'].notna()) & (accounts_summary['Goal'] != 0),
+            round(100 * accounts_summary['Balance (IDR)'] / accounts_summary['Goal'], 2),
+            None
+        )
 
-    # Add total row
-    total_balance = accounts_summary['Balance (IDR)'].sum()
-    total_goal = accounts_summary['Goal'].sum(skipna=True)
+        # Add total row
+        total_balance = accounts_summary['Balance (IDR)'].sum()
+        total_goal = accounts_summary['Goal'].sum(skipna=True)
+        total_percent = (
+            round(100 * total_balance / total_goal, 2)
+            if pd.notnull(total_goal) and total_goal != 0 else None
+        )
 
-    if accounts_summary[['Balance (IDR)', 'Goal']].notna().all().all(): # Only calculate if there are no NaNs in both columns
-        total_percent = round(100 * total_balance / total_goal, 2) if total_goal else None
-    else:
-        total_percent = None
+        total_row = pd.DataFrame([{
+            'Account': 'Total',
+            'Balance (IDR)': total_balance,
+            'Goal': total_goal,
+            '%': total_percent
+        }])
 
-    total_row = pd.DataFrame([{
-        'Account': 'Total',
-        'Balance (IDR)': total_balance,
-        'Goal': total_goal,
-        '%': total_percent
-    }])
+        account_total_summary = pd.concat([accounts_summary, total_row], ignore_index=True)
 
-    account_total_summary = pd.concat([accounts_summary, total_row], ignore_index=True)
-
-    # Show table
-    st.dataframe(account_total_summary, hide_index=True)
+        # Show table
+        st.dataframe(account_total_summary, hide_index=True)
 
     # Edit button → switch page
     if st.button("Edit Goals"):
-        # store editable data
-        st.session_state.edit_df = accounts_summary.copy()  
-
-        # go to page 2 - edit goals
+        st.session_state.edit_df = accounts_summary.copy()
         st.session_state.current_page = "edit"
         st.rerun()
 
@@ -90,7 +95,6 @@ if st.session_state.current_page == "main":
 elif st.session_state.current_page == "edit":
     st.title("✏ Edit Goals")
 
-    # Editable table from session
     edited_goals = st.data_editor(
         st.session_state.edit_df,
         num_rows="fixed",
@@ -102,12 +106,8 @@ elif st.session_state.current_page == "edit":
         }
     )
 
-    # Save button → go back to main
     if st.button("Save"):
-        # save without index
-        edited_goals.to_csv(accounts_file, index=False)  
+        edited_goals.to_csv(accounts_file, index=False)
         st.success("Goals updated!")
-
-        # return to main page
-        st.session_state.current_page = "main"  
+        st.session_state.current_page = "main"
         st.rerun()

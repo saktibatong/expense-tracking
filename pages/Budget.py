@@ -33,8 +33,8 @@ with st.container():
         # Income budget editor
         edited_income_budget_df = st.data_editor(income_budget_df, num_rows="fixed", use_container_width=True)
 
-        if st.button("Save income budget"):
-            edited_income_budget_df.to_csv(income_budget_file)
+        if st.button("Save income budget", key="save_income_budget"):
+            edited_income_budget_df.to_csv(income_budget_file, index_label=edited_income_budget_df.index.name)
             st.success("Saved to income budget")
             st.rerun()
 
@@ -42,7 +42,7 @@ with st.container():
         # Expense budget editor
         edited_expense_budget_df = st.data_editor(expense_budget_df, num_rows="fixed", use_container_width=True)
 
-        if st.button("Save expense budget"):
-            edited_expense_budget_df.to_csv(expense_budget_file)
+        if st.button("Save expense budget", key="save_expense_budget"):
+            edited_expense_budget_df.to_csv(expense_budget_file, index_label=edited_expense_budget_df.index.name)
             st.success("Saved to expense budget")
             st.rerun()
