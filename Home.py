@@ -44,10 +44,10 @@ if "expense_category" not in st.session_state:
     ]
 
 #%% LOAD TRANSACTIONS
-transaction_file = "https://raw.githubusercontent.com/saktibatong/expense-tracking/main/data/transaction.csv"
-if os.path.exists(transaction_file):
-    transaction_df = pd.read_csv(transaction_file)
-else:
+transaction_url = "https://raw.githubusercontent.com/saktibatong/expense-tracking/main/data/transaction.csv"
+try:
+    transaction_df = pd.read_csv(transaction_url)
+except Exception:
     transaction_df = pd.DataFrame(columns=[
         "Date", "Payee", "Account", "Transaction category",
         "Income category", "Expense category", "Money received", "Payment"
@@ -103,8 +103,9 @@ with st.container():
             ])
 
         transaction_df = pd.concat([transaction_df, pd.DataFrame(rows_to_add, columns=transaction_df.columns)], ignore_index=True)
-        csv_string = transaction_df.to_csv(transaction_file, index=False)
+        csv_string = transaction_df.to_csv(index=False)
 
+        # GitHub update
         g = Github(token)
         repo = g.get_repo(repo_name)
         file = repo.get_contents(file_path) # Get current file info
@@ -112,6 +113,7 @@ with st.container():
 
         formatted_amount = f"{(deposit or payment):,.0f}".replace(",", ".")
         st.success(f"Entry added! 📅 **{date}** — 💳 **{account}** — {transaction_category} of **Rp {formatted_amount}**")
+
 
 #%% FILTER DATA BY TODAY
 today = date.today()
