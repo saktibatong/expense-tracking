@@ -21,3 +21,4 @@ Date,Payee,Account,Transaction category,Income category,Expense category,Money r
 2025-08-14,,Saving JAGO,Expense,,Child Care,0.0,1000.0
 2025-08-14,,Saving JAGO,Transfer,,Transfer,0.0,2000.0
 2025-08-14,,Checking BRI,Transfer,Transfer,,2000.0,0.0
+2025-08-13,ecaw,Checking BRI,Income,Refunds/Reimbursements,,1500.0,0.0
