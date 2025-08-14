@@ -3,12 +3,13 @@ from datetime import date, timedelta
 import pandas as pd
 import streamlit as st
 import altair as alt
+from github import Github
 
 #%%
 st.title("💰 Transactions")
 
 # Read transactions
-transaction_file = "data/transaction.csv"
+transaction_file = "https://raw.githubusercontent.com/saktibatong/expense-tracking/main/data/transaction.csv"
 transaction_df = pd.read_csv(transaction_file)
 
 # Ensure proper date type

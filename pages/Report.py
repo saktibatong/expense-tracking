@@ -159,6 +159,7 @@ if selected_report == 'Monthly':
     st.markdown(f'**End month:** {specified_end}')
 
     display_transaction_summary(transaction_df, specified_start, specified_end, category_map=None)
+    
 #%%
 if selected_report == 'Annual':
     st.markdown(f'**Begin month:** {select_start_year}')

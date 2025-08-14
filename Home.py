@@ -3,6 +3,14 @@ import os
 import pandas as pd
 import streamlit as st
 import altair as alt
+from github import Github
+
+#%%
+# Use Streamlit secrets or hardcode token (not recommended for public apps)
+token = st.secrets["GITHUB_TOKEN"]  # safer way
+repo_name = "saktibatong/expense-tracking"
+file_path = "data/transaction.csv"
+commit_message = "Update transaction CSV from Streamlit"
 
 #%% PAGE CONFIG
 st.set_page_config(page_title="Home - Money Manager", layout="wide")
@@ -36,7 +44,7 @@ if "expense_category" not in st.session_state:
     ]
 
 #%% LOAD TRANSACTIONS
-transaction_file = "data/transaction.csv"
+transaction_file = "https://raw.githubusercontent.com/saktibatong/expense-tracking/main/data/transaction.csv"
 if os.path.exists(transaction_file):
     transaction_df = pd.read_csv(transaction_file)
 else:
@@ -95,7 +103,12 @@ with st.container():
             ])
 
         transaction_df = pd.concat([transaction_df, pd.DataFrame(rows_to_add, columns=transaction_df.columns)], ignore_index=True)
-        transaction_df.to_csv(transaction_file, index=False)
+        csv_string = transaction_df.to_csv(transaction_file, index=False)
+
+        g = Github(token)
+        repo = g.get_repo(repo_name)
+        file = repo.get_contents(file_path) # Get current file info
+        repo.update_file(file.path, commit_message, csv_string, file.sha)
 
         formatted_amount = f"{(deposit or payment):,.0f}".replace(",", ".")
         st.success(f"Entry added! 📅 **{date}** — 💳 **{account}** — {transaction_category} of **Rp {formatted_amount}**")
